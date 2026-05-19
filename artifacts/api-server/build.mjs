@@ -1,7 +1,17 @@
 import { build } from "esbuild";
-import { rmSync } from "node:fs";
+import { rmSync, readFileSync } from "node:fs";
 
 rmSync("./dist", { recursive: true, force: true });
+
+// Lista de externals: todas las deps de npm (pg, express, drizzle, etc.)
+// EXCEPTO los paquetes locales del workspace (@workspace/*), que SÍ queremos
+// bundlear dentro del .mjs para que el runtime no necesite resolver módulos
+// locales del monorepo.
+const pkg = JSON.parse(readFileSync("./package.json", "utf8"));
+const external = [
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
+].filter((d) => !d.startsWith("@workspace/"));
 
 const common = {
   bundle: true,
@@ -9,7 +19,7 @@ const common = {
   target: "node22",
   format: "esm",
   sourcemap: true,
-  packages: "external",
+  external,
   logLevel: "info",
 };
 
