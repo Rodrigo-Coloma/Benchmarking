@@ -18,7 +18,7 @@ de esta app y enganchar su `location /evidencias` al Nginx existente**.
 ```bash
 cd ~
 git clone git@github.com:<tu-usuario>/benchmarking.git
-cd benchmarking
+cd Benchmarking
 ```
 
 El repo ya incluye `deploy/.env` con tus claves (Anthropic, OpenAI,
@@ -27,8 +27,8 @@ servidor lo copias por SCP desde tu máquina:
 
 ```bash
 # Desde tu máquina, una vez:
-scp deploy/.env rodrigo@rcoloma.dev:~/benchmarking/deploy/.env
-ssh rodrigo@rcoloma.dev "chmod 600 ~/benchmarking/deploy/.env"
+scp deploy/.env rcoloma@rcoloma.dev:~/Benchmarking/deploy/.env
+ssh rcoloma@rcoloma.dev "chmod 600 ~/Benchmarking/deploy/.env"
 ```
 
 Antes de copiarlo edita una sola variable: `POSTGRES_PASSWORD`. Genera
@@ -41,10 +41,10 @@ openssl rand -base64 24      # → pégala en POSTGRES_PASSWORD del .env
 Y replica ese mismo valor en el archivo de secret del contenedor Postgres:
 
 ```bash
-ssh rodrigo@rcoloma.dev
-mkdir -p ~/benchmarking/deploy/secrets
-echo -n "EL_MISMO_POSTGRES_PASSWORD" > ~/benchmarking/deploy/secrets/postgres_password.txt
-chmod 600 ~/benchmarking/deploy/secrets/postgres_password.txt
+ssh rcoloma@rcoloma.dev
+mkdir -p ~/Benchmarking/deploy/secrets
+echo -n "EL_MISMO_POSTGRES_PASSWORD" > ~/Benchmarking/deploy/secrets/postgres_password.txt
+chmod 600 ~/Benchmarking/deploy/secrets/postgres_password.txt
 ```
 
 ## 2. Enganchar el vhost al Nginx existente
@@ -103,7 +103,7 @@ Después `sudo nginx -t && sudo systemctl reload nginx`.
 ## 3. Primer arranque
 
 ```bash
-cd ~/benchmarking
+cd ~/Benchmarking
 ./deploy/scripts/deploy.sh
 ```
 
@@ -120,8 +120,8 @@ Si todo va bien verás `✓ Deploy saludable` al final.
 Igual de simple:
 
 ```bash
-ssh rodrigo@rcoloma.dev
-cd ~/benchmarking
+ssh rcoloma@rcoloma.dev
+cd ~/Benchmarking
 git pull --rebase --autostash
 ./deploy/scripts/deploy.sh
 ```
@@ -151,7 +151,7 @@ docker compose -f deploy/docker-compose.yml logs -f api
 sudo tail -f /var/log/nginx/rcoloma.dev.access.log /var/log/nginx/rcoloma.dev.error.log
 
 # DB shell (via túnel SSH)
-ssh -L 5432:localhost:5432 rodrigo@rcoloma.dev
+ssh -L 5432:localhost:5432 rcoloma@rcoloma.dev
 # en otra terminal:
 psql postgres://assetmanager:***@localhost:5432/assetmanager
 ```
@@ -165,7 +165,7 @@ directamente.)
 ## 7. Rollback rápido
 
 ```bash
-cd ~/benchmarking
+cd ~/Benchmarking
 git log --oneline -10
 git checkout <SHA_anterior>
 ./deploy/scripts/deploy.sh

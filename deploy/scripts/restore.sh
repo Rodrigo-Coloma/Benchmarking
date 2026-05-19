@@ -11,7 +11,7 @@ if [[ -z "$FILE" || ! -f "$FILE" ]]; then
   exit 1
 fi
 
-COMPOSE_FILE="${COMPOSE_FILE:-/home/rodrigo/benchmarking/deploy/docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-/home/rcoloma/Benchmarking/deploy/docker-compose.yml}"
 
 read -rp "Vas a RESTAURAR $FILE sobre el Postgres actual. Escribe 'YES' para continuar: " ack
 if [[ "$ack" != "YES" ]]; then

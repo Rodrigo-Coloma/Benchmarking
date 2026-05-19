@@ -6,7 +6,7 @@ set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/postgres}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
-COMPOSE_FILE="${COMPOSE_FILE:-/home/rodrigo/benchmarking/deploy/docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-/home/rcoloma/Benchmarking/deploy/docker-compose.yml}"
 
 STAMP=$(date -u +"%Y%m%dT%H%M%SZ")
 FILE="$BACKUP_DIR/assetmanager_${STAMP}.sql.gz"
