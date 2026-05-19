@@ -3,9 +3,8 @@ import { COLUMNS, EVIDENCIAS_SHEET_NAME, KPIS_SHEET_NAME } from "./schema.js";
 import type { Evidencia, Kpi } from "@workspace/db";
 
 /**
- * Export simétrico a la plantilla (V3 §3.7): el usuario puede descargar las
- * evidencias actuales, editar en local y volver a subir. Mismas cabeceras,
- * mismo orden.
+ * Export simétrico: mismas 26 columnas que el template para que el usuario
+ * pueda descargar, editar en local y resubir sin fricciones.
  */
 export async function buildEvidenciasDownload(opts: {
   projectName: string;
@@ -29,16 +28,18 @@ export async function buildEvidenciasDownload(opts: {
   for (const e of opts.evidencias) {
     const kpi = e.kpi_id ? opts.kpisById.get(e.kpi_id) : undefined;
     ev.addRow({
-      kpi_external_code: kpi?.external_code ?? "",
+      id: e.id,
       empresa_comparable: e.empresa_comparable,
-      ano: e.ano ?? null,
       entidad_fuente: e.entidad_fuente ?? "",
+      ano: e.ano ?? null,
+      codigo_indicador: e.codigo_indicador ?? kpi?.external_code ?? "",
+      indicador: e.indicador ?? kpi?.name ?? "",
+      categoria_efqm: e.categoria_efqm ?? "",
+      pilar_ilunion: e.pilar_ilunion ?? "",
       fuente_nivel: e.fuente_nivel ?? "",
       fuente_tipo: e.fuente_tipo,
       fuente_titulo: e.fuente_titulo ?? "",
       url_validada: e.url_validada ?? "",
-      ubicacion_fuente: e.ubicacion_fuente ?? "",
-      texto_evidencia: e.texto_evidencia ?? "",
       valor_reportado: e.valor_reportado ?? null,
       unidad: e.unidad ?? "",
       comparabilidad: e.comparabilidad ?? "",
@@ -48,13 +49,17 @@ export async function buildEvidenciasDownload(opts: {
       unidad_base_referencia: e.unidad_base_referencia ?? "",
       indicador_fuente: e.indicador_fuente ?? "",
       encaje_indicador: e.encaje_indicador ?? "",
+      estado_auditoria: e.estado_auditoria ?? "",
+      id_data: e.id_data ?? "",
+      tipo_compania: e.tipo_compania ?? "",
+      unidad_estandarizada: e.unidad_estandarizada ?? "",
+      valor_estandarizado: e.valor_estandarizado ?? null,
     });
   }
 
-  // Hoja kpis de referencia.
   const kpis = wb.addWorksheet(KPIS_SHEET_NAME);
   kpis.columns = [
-    { header: "external_code", key: "external_code", width: 24 },
+    { header: "external_code", key: "external_code", width: 32 },
     { header: "name", key: "name", width: 60 },
     { header: "standard_unit", key: "standard_unit", width: 18 },
   ];

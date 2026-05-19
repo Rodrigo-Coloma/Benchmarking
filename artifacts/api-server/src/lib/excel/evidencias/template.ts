@@ -22,13 +22,21 @@ const HEADER_FONT: Partial<ExcelJS.Font> = {
   color: { argb: "FFFFFFFF" },
 };
 
+const DATA_ROWS = 5000;
+
+const colLetter = (i: number) => {
+  let s = "";
+  let n = i;
+  while (n >= 0) {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  }
+  return s;
+};
+
 /**
- * Genera la plantilla XLSX descargable (V3 §3.2). Contiene cuatro hojas:
- *
- *   - "evidencias"     : cabeceras en fila 1 con freeze + data validation
- *   - "instrucciones"  : descripción de cada columna y valores permitidos
- *   - "kpis"           : catálogo del proyecto, read-only (para consulta del usuario)
- *   - "enums"          : listas que alimentan las data validations
+ * Plantilla descargable de evidencias — 26 columnas A..Z, exactamente como
+ * el formato que el cliente ya usa en sus exports.
  */
 export async function buildEvidenciasTemplate(opts: {
   projectName: string;
@@ -40,7 +48,7 @@ export async function buildEvidenciasTemplate(opts: {
   wb.created = new Date();
   wb.calcProperties.fullCalcOnLoad = true;
 
-  // --- evidencias ---
+  // --- Evidencias ---
   const ev = wb.addWorksheet(EVIDENCIAS_SHEET_NAME, {
     views: [{ state: "frozen", ySplit: 1 }],
   });
@@ -53,14 +61,14 @@ export async function buildEvidenciasTemplate(opts: {
   ev.getRow(1).fill = HEADER_FILL;
   ev.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-  // --- enums (oculta, alimenta validaciones) ---
+  // --- enums (oculta) ---
   const enums = wb.addWorksheet(ENUMS_SHEET_NAME);
   enums.state = "hidden";
   enums.columns = [
-    { header: "fuente_nivel", key: "fuente_nivel", width: 20 },
-    { header: "comparabilidad", key: "comparabilidad", width: 20 },
-    { header: "decision_final", key: "decision_final", width: 24 },
-    { header: "fuente_tipo_hints", key: "fuente_tipo_hints", width: 24 },
+    { header: "fuente_nivel",       key: "fuente_nivel", width: 20 },
+    { header: "comparabilidad",     key: "comparabilidad", width: 20 },
+    { header: "decision_final",     key: "decision_final", width: 24 },
+    { header: "fuente_tipo_hints",  key: "fuente_tipo_hints", width: 32 },
   ];
   enums.getRow(1).font = { bold: true };
   const maxRows = Math.max(
@@ -81,12 +89,14 @@ export async function buildEvidenciasTemplate(opts: {
   const enumRange = (col: string, len: number) =>
     `${ENUMS_SHEET_NAME}!$${col}$2:$${col}$${len + 1}`;
 
-  // Aplicamos data validation a las primeras 5000 filas (suficiente para casos
-  // reales; exceljs aplica la validación celda a celda).
-  const DATA_ROWS = 5000;
+  // Localiza letras de columnas por nombre (insensible al orden interno).
+  const colByHeader = Object.fromEntries(
+    COLUMNS.map((c) => [c.header, colLetter(c.index)]),
+  );
 
   for (let r = 2; r <= DATA_ROWS + 1; r++) {
-    ev.getCell(`E${r}`).dataValidation = {
+    // fuente_nivel
+    ev.getCell(`${colByHeader["fuente_nivel"]}${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [enumRange("A", FUENTE_NIVEL.length)],
@@ -94,7 +104,8 @@ export async function buildEvidenciasTemplate(opts: {
       errorTitle: "Valor no permitido",
       error: `Usa uno de: ${FUENTE_NIVEL.join(", ")}`,
     };
-    ev.getCell(`M${r}`).dataValidation = {
+    // comparabilidad
+    ev.getCell(`${colByHeader["comparabilidad"]}${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [enumRange("B", COMPARABILIDAD.length)],
@@ -102,7 +113,8 @@ export async function buildEvidenciasTemplate(opts: {
       errorTitle: "Valor no permitido",
       error: `Usa uno de: ${COMPARABILIDAD.join(", ")}`,
     };
-    ev.getCell(`O${r}`).dataValidation = {
+    // decision_final
+    ev.getCell(`${colByHeader["decision_final"]}${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [enumRange("C", DECISION_FINAL.length)],
@@ -110,15 +122,15 @@ export async function buildEvidenciasTemplate(opts: {
       errorTitle: "Valor no permitido",
       error: `Usa uno de: ${DECISION_FINAL.join(", ")}`,
     };
-    // fuente_tipo es libre (string) pero damos pistas con un dropdown
-    ev.getCell(`F${r}`).dataValidation = {
+    // fuente_tipo (libre, sólo hints)
+    ev.getCell(`${colByHeader["fuente_tipo"]}${r}`).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: [enumRange("D", FUENTE_TIPO_HINTS.length)],
       showErrorMessage: false,
     };
-    // ano: entero 2000-2099
-    ev.getCell(`C${r}`).dataValidation = {
+    // ano 2000-2099
+    ev.getCell(`${colByHeader["ano"]}${r}`).dataValidation = {
       type: "whole",
       operator: "between",
       allowBlank: true,
@@ -144,10 +156,10 @@ export async function buildEvidenciasTemplate(opts: {
     letter: "",
     header: `Proyecto: ${opts.projectName}`,
     required: opts.projectFramework ?? "",
-    description: "Rellena la hoja 'evidencias'. NO modifiques cabeceras ni columnas.",
+    description:
+      "Rellena la hoja 'Evidencias'. La columna `id` es opcional al subir.",
   });
   inst.addRow({});
-
   for (const col of COLUMNS) {
     inst.addRow({
       letter: col.letter,
@@ -160,11 +172,11 @@ export async function buildEvidenciasTemplate(opts: {
   // --- kpis (catálogo, read-only) ---
   const kpis = wb.addWorksheet(KPIS_SHEET_NAME);
   kpis.columns = [
-    { header: "external_code", key: "external_code", width: 24 },
-    { header: "name", key: "name", width: 60 },
-    { header: "scope", key: "scope", width: 24 },
-    { header: "standard_unit", key: "standard_unit", width: 18 },
-    { header: "category", key: "category", width: 24 },
+    { header: "external_code",  key: "external_code", width: 32 },
+    { header: "name",           key: "name", width: 60 },
+    { header: "scope",          key: "scope", width: 24 },
+    { header: "standard_unit",  key: "standard_unit", width: 18 },
+    { header: "category",       key: "category", width: 24 },
   ];
   kpis.getRow(1).font = HEADER_FONT;
   kpis.getRow(1).fill = HEADER_FILL;

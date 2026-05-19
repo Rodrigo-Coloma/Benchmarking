@@ -174,9 +174,9 @@ export function EvidenciasPage() {
               color="text-amber-600"
             />
             <Stat
-              label="KPI no encontrados"
-              value={importResult.summary.totals.kpi_not_found}
-              color="text-red-600"
+              label="KPI fuera de catálogo"
+              value={importResult.summary.totals.kpi_not_in_catalog}
+              color="text-amber-600"
             />
             <Stat
               label="Errores"
@@ -277,6 +277,7 @@ export function EvidenciasPage() {
           <thead className="bg-[hsl(var(--muted))] text-left text-xs uppercase">
             <tr>
               <th className="px-3 py-2">Empresa</th>
+              <th className="px-3 py-2">Indicador</th>
               <th className="px-3 py-2">Año</th>
               <th className="px-3 py-2">Valor</th>
               <th className="px-3 py-2">Unidad</th>
@@ -288,14 +289,14 @@ export function EvidenciasPage() {
           <tbody>
             {evidencias.isLoading && (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-[hsl(var(--muted-foreground))]">
+                <td colSpan={8} className="px-3 py-6 text-center text-[hsl(var(--muted-foreground))]">
                   Cargando…
                 </td>
               </tr>
             )}
             {!evidencias.isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-[hsl(var(--muted-foreground))]">
+                <td colSpan={8} className="px-3 py-6 text-center text-[hsl(var(--muted-foreground))]">
                   Sin evidencias. Descarga la plantilla, rellénala y súbela.
                 </td>
               </tr>
@@ -310,6 +311,14 @@ export function EvidenciasPage() {
                   {r.tipo_compania && (
                     <div className="text-xs text-[hsl(var(--muted-foreground))]">
                       {r.tipo_compania}
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <div className="text-sm">{r.indicador ?? "—"}</div>
+                  {r.codigo_indicador && (
+                    <div className="font-mono text-xs text-[hsl(var(--muted-foreground))]">
+                      {r.codigo_indicador}
                     </div>
                   )}
                 </td>

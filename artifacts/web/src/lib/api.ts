@@ -246,21 +246,31 @@ export interface Evidencia {
   id: number;
   project_id: string;
   kpi_id: string | null;
+  codigo_indicador: string | null;
   empresa_comparable: string;
   entidad_fuente: string | null;
   ano: number | null;
+  indicador: string | null;
+  categoria_efqm: string | null;
+  pilar_ilunion: string | null;
   fuente_nivel: string | null;
   fuente_tipo: string;
   fuente_titulo: string | null;
   url_validada: string | null;
-  ubicacion_fuente: string | null;
-  texto_evidencia: string | null;
   valor_reportado: number | null;
   unidad: string | null;
   comparabilidad: string | null;
   observacion_metodologica: string | null;
   decision_final: string | null;
+  definicion_referencia: string | null;
+  unidad_base_referencia: string | null;
+  indicador_fuente: string | null;
+  encaje_indicador: string | null;
+  estado_auditoria: string | null;
+  id_data: string | null;
   tipo_compania: string | null;
+  unidad_estandarizada: string | null;
+  valor_estandarizado: number | null;
   created_at: string;
 }
 
@@ -281,7 +291,7 @@ export interface EvidenciaImportRun {
       new: number;
       updated: number;
       unchanged: number;
-      kpi_not_found: number;
+      kpi_not_in_catalog: number;
       will_remove_in_replace: number;
     };
   };

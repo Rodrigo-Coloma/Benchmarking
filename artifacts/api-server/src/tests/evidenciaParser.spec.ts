@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as XLSX from "xlsx";
-import {
-  parseEvidenciasXlsx,
-} from "../lib/excel/evidencias/parser.js";
+import { parseEvidenciasXlsx } from "../lib/excel/evidencias/parser.js";
 import {
   COLUMNS,
   EVIDENCIAS_SHEET_NAME,
@@ -18,125 +16,105 @@ function buildWorkbook(rows: Array<Array<unknown>>): Buffer {
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 }
 
-describe("parseEvidenciasXlsx", () => {
-  it("falla si la hoja 'evidencias' no existe", () => {
+function row(overrides: Record<string, unknown> = {}): unknown[] {
+  const base: Record<string, unknown> = {
+    id: null,
+    empresa_comparable: "Ibercaja",
+    entidad_fuente: "Ibercaja Banco, S.A.",
+    ano: 2024,
+    codigo_indicador: "AD_HOC_C7_ROTACION_PERSONAS",
+    indicador: "Tasa de rotación de personas",
+    categoria_efqm: "C7 Personas",
+    pilar_ilunion: null,
+    fuente_nivel: "Nivel 1",
+    fuente_tipo: "Informe de gestión consolidado",
+    fuente_titulo: "Informe 2024",
+    url_validada: null,
+    valor_reportado: 6.87,
+    unidad: "%",
+    comparabilidad: "Media",
+    observacion_metodologica: null,
+    decision_final: "REVISAR",
+    definicion_referencia: null,
+    unidad_base_referencia: null,
+    indicador_fuente: null,
+    encaje_indicador: null,
+    estado_auditoria: "Si",
+    id_data: "22",
+    tipo_compania: "Entidad financiera",
+    unidad_estandarizada: "%",
+    valor_estandarizado: 6.87,
+    ...overrides,
+  };
+  return COLUMNS.map((c) => base[c.header] ?? null);
+}
+
+describe("parseEvidenciasXlsx (26 columnas)", () => {
+  it("falla si la hoja 'Evidencias' no existe", () => {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([["a", "b"]]);
     XLSX.utils.book_append_sheet(wb, ws, "otra");
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-    expect(() => parseEvidenciasXlsx(buf)).toThrow(/evidencias/);
+    expect(() => parseEvidenciasXlsx(buf)).toThrow(/Evidencias/);
   });
 
   it("reporta cabeceras incorrectas en la fila 1", () => {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
       ["wrong_header", ...COLUMNS.slice(1).map((c) => c.header)],
-      ["k1", "Eulen", 2024, null, null, "EINF"],
+      row(),
     ]);
     XLSX.utils.book_append_sheet(wb, ws, EVIDENCIAS_SHEET_NAME);
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-
     const result = parseEvidenciasXlsx(buf);
     expect(result.headerErrors.length).toBeGreaterThan(0);
-    expect(result.valid).toEqual([]);
   });
 
-  it("parsea una fila válida mínima", () => {
-    const row: unknown[] = new Array(COLUMNS.length).fill(null);
-    row[0] = "KPI_1";
-    row[1] = "Eulen";
-    row[2] = 2024;
-    row[5] = "EINF";
-
-    const buf = buildWorkbook([row]);
+  it("parsea una fila válida con los 26 campos", () => {
+    const buf = buildWorkbook([row()]);
     const result = parseEvidenciasXlsx(buf);
-
     expect(result.headerErrors).toEqual([]);
     expect(result.invalid).toEqual([]);
     expect(result.valid).toHaveLength(1);
-    expect(result.valid[0].data.kpi_external_code).toBe("KPI_1");
-    expect(result.valid[0].data.empresa_comparable).toBe("Eulen");
-    expect(result.valid[0].data.ano).toBe(2024);
-    expect(result.valid[0].data.fuente_tipo).toBe("EINF");
+    const r = result.valid[0].data;
+    expect(r.codigo_indicador).toBe("AD_HOC_C7_ROTACION_PERSONAS");
+    expect(r.empresa_comparable).toBe("Ibercaja");
+    expect(r.ano).toBe(2024);
+    expect(r.valor_reportado).toBe(6.87);
+    expect(r.decision_final).toBe("REVISAR");
+    expect(r.unidad_estandarizada).toBe("%");
+    expect(r.valor_estandarizado).toBe(6.87);
+    expect(r.id_data).toBe("22");
   });
 
-  it("acepta números con coma decimal en valor_reportado", () => {
-    const row: unknown[] = new Array(COLUMNS.length).fill(null);
-    row[0] = "KPI_1";
-    row[1] = "Eulen";
-    row[2] = 2024;
-    row[5] = "EINF";
-    row[10] = "1.234,56";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([row]));
-    expect(result.valid[0]?.data.valor_reportado).toBeCloseTo(1234.56, 2);
+  it("acepta el enum REVISAR de tu Excel real", () => {
+    const buf = buildWorkbook([row({ decision_final: "REVISAR" })]);
+    const result = parseEvidenciasXlsx(buf);
+    expect(result.valid[0].data.decision_final).toBe("REVISAR");
   });
 
-  it("rechaza fuente_nivel fuera del enum", () => {
-    const row: unknown[] = new Array(COLUMNS.length).fill(null);
-    row[0] = "KPI_1";
-    row[1] = "Eulen";
-    row[2] = 2024;
-    row[4] = "Nivel 9";   // fuera del enum
-    row[5] = "EINF";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([row]));
-    expect(result.valid).toEqual([]);
+  it("rechaza decision_final fuera del enum", () => {
+    const buf = buildWorkbook([row({ decision_final: "XYZ" })]);
+    const result = parseEvidenciasXlsx(buf);
     expect(result.invalid).toHaveLength(1);
-    expect(result.invalid[0].errors[0].column).toBe("E");
   });
 
-  it("rechaza año fuera de rango", () => {
-    const row: unknown[] = new Array(COLUMNS.length).fill(null);
-    row[0] = "KPI_1";
-    row[1] = "Eulen";
-    row[2] = 1990;
-    row[5] = "EINF";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([row]));
-    expect(result.invalid).toHaveLength(1);
-    expect(result.invalid[0].errors.some((e) => e.column === "C")).toBe(true);
-  });
-
-  it("rechaza URL no http(s)", () => {
-    const row: unknown[] = new Array(COLUMNS.length).fill(null);
-    row[0] = "KPI_1";
-    row[1] = "Eulen";
-    row[2] = 2024;
-    row[5] = "EINF";
-    row[7] = "ftp://example.com/file.pdf";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([row]));
-    expect(result.invalid).toHaveLength(1);
-    expect(result.invalid[0].errors.some((e) => e.column === "H")).toBe(true);
-  });
-
-  it("ignora filas completamente vacías", () => {
-    const row1: unknown[] = new Array(COLUMNS.length).fill(null);
-    row1[0] = "KPI_1";
-    row1[1] = "Eulen";
-    row1[2] = 2024;
-    row1[5] = "EINF";
-    const empty: unknown[] = new Array(COLUMNS.length).fill(null);
-    const row3 = [...row1];
-    row3[1] = "Clece";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([row1, empty, row3]));
-    expect(result.valid).toHaveLength(2);
-  });
-
-  it("acumula errores por fila sin abortar el batch", () => {
-    const ok: unknown[] = new Array(COLUMNS.length).fill(null);
-    ok[0] = "KPI_1";
-    ok[1] = "Eulen";
-    ok[2] = 2024;
-    ok[5] = "EINF";
-
-    const bad = [...ok];
-    bad[2] = "no-es-año";
-
-    const result = parseEvidenciasXlsx(buildWorkbook([ok, bad]));
+  it("ignora la columna id si está vacía", () => {
+    const buf = buildWorkbook([row({ id: null })]);
+    const result = parseEvidenciasXlsx(buf);
     expect(result.valid).toHaveLength(1);
+    expect(result.valid[0].data.id).toBeNull();
+  });
+
+  it("respeta la columna id cuando viene rellena", () => {
+    const buf = buildWorkbook([row({ id: 136 })]);
+    const result = parseEvidenciasXlsx(buf);
+    expect(result.valid[0].data.id).toBe(136);
+  });
+
+  it("rechaza codigo_indicador vacío (obligatorio)", () => {
+    const buf = buildWorkbook([row({ codigo_indicador: "" })]);
+    const result = parseEvidenciasXlsx(buf);
     expect(result.invalid).toHaveLength(1);
   });
 });

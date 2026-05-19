@@ -31,8 +31,11 @@ export const evidencias = pgTable(
     entidad_fuente: text("entidad_fuente"),
     ano: integer("ano"),
 
+    codigo_indicador: text("codigo_indicador"),
     indicador: text("indicador"),
     categoria_efqm: text("categoria_efqm"),
+    pilar_ilunion: text("pilar_ilunion"),
+    id_data: text("id_data"),
     fuente_nivel: text("fuente_nivel"),
     fuente_tipo: text("fuente_tipo").notNull(),
     fuente_titulo: text("fuente_titulo"),

@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 /**
- * Schema fijo del Excel de evidencias (V3 §3). 19 columnas A..S, sin
- * tolerancia a variaciones de orden o nombre. Toda la validación de tipos vive
- * aquí; los mensajes de error se traducen a la celda exacta al ejecutar el
- * parser (ver parser.ts).
+ * Schema fijo del Excel de evidencias — alineado con el formato que ya usa
+ * el cliente (ej. evidencias_efqm_*.xlsx, 26 columnas A..Z). La hoja se
+ * llama exactamente "Evidencias" (con E mayúscula) por consistencia con sus
+ * archivos existentes.
  */
 
 export const FUENTE_NIVEL = [
@@ -27,6 +27,7 @@ export const DECISION_FINAL = [
   "PREVALIDADO IA",
   "DESCARTAR",
   "REVISION MANUAL",
+  "REVISAR",
   "NUEVA",
   "Pendiente",
   "No aplica",
@@ -34,6 +35,8 @@ export const DECISION_FINAL = [
 
 export const FUENTE_TIPO_HINTS = [
   "EINF",
+  "Informe de gestión consolidado",
+  "Memoria de sostenibilidad",
   "Web corporativa",
   "Certificación",
   "Prensa",
@@ -42,36 +45,48 @@ export const FUENTE_TIPO_HINTS = [
 ];
 
 export interface ColumnDef {
-  letter: string;       // "A", "B", …
-  index: number;        // 0-indexed (A=0)
-  header: string;       // string esperado en fila 1
+  letter: string;
+  index: number;
+  header: string;
   required: boolean;
   description: string;
 }
 
+/**
+ * 26 columnas exactas. El orden y los nombres de cabecera deben coincidir
+ * para que el parser acepte el fichero. La columna `id` es opcional al subir
+ * (si viene, se respeta para futuras correlaciones; si no, se autoincrementa).
+ */
 export const COLUMNS: ColumnDef[] = [
-  { letter: "A", index: 0,  header: "kpi_external_code",      required: true,  description: "Código del KPI en el catálogo del proyecto." },
-  { letter: "B", index: 1,  header: "empresa_comparable",     required: true,  description: "Nombre de la empresa peer (máx 200 chars)." },
-  { letter: "C", index: 2,  header: "ano",                    required: true,  description: "Año del dato (2000–2099)." },
-  { letter: "D", index: 3,  header: "entidad_fuente",         required: false, description: "Organismo/empresa fuente." },
-  { letter: "E", index: 4,  header: "fuente_nivel",           required: false, description: "Nivel 1..Nivel 5." },
-  { letter: "F", index: 5,  header: "fuente_tipo",            required: true,  description: "EINF / Web corporativa / Certificación / Prensa / Estimación / Otro." },
-  { letter: "G", index: 6,  header: "fuente_titulo",          required: false, description: "Título de la fuente." },
-  { letter: "H", index: 7,  header: "url_validada",           required: false, description: "URL absoluta (http(s)://)." },
-  { letter: "I", index: 8,  header: "ubicacion_fuente",       required: false, description: "p. 34, tabla 12, sección 3.2…" },
-  { letter: "J", index: 9,  header: "texto_evidencia",        required: false, description: "Cita textual breve, máx 1000 chars." },
-  { letter: "K", index: 10, header: "valor_reportado",        required: false, description: "Número decimal (separador `.` o `,`)." },
-  { letter: "L", index: 11, header: "unidad",                 required: false, description: "Unidad tal cual aparece en la fuente." },
-  { letter: "M", index: 12, header: "comparabilidad",         required: false, description: "Alta / Media / Baja / No comparable." },
-  { letter: "N", index: 13, header: "observacion_metodologica", required: false, description: "Observación metodológica." },
-  { letter: "O", index: 14, header: "decision_final",         required: false, description: "OK / PREVALIDADO IA / DESCARTAR / REVISION MANUAL / NUEVA / Pendiente / No aplica. Default NUEVA." },
-  { letter: "P", index: 15, header: "definicion_referencia",  required: false, description: "Definición del KPI según referencia." },
-  { letter: "Q", index: 16, header: "unidad_base_referencia", required: false, description: "Unidad estandarizada del KPI." },
-  { letter: "R", index: 17, header: "indicador_fuente",       required: false, description: "Cómo lo llamaba la fuente original." },
-  { letter: "S", index: 18, header: "encaje_indicador",       required: false, description: "Encaje con el KPI." },
+  { letter: "A", index: 0,  header: "id",                       required: false, description: "ID interno (opcional al subir; se autoincrementa si no se especifica)." },
+  { letter: "B", index: 1,  header: "empresa_comparable",       required: true,  description: "Nombre de la empresa peer (máx 200 chars)." },
+  { letter: "C", index: 2,  header: "entidad_fuente",           required: false, description: "Razón social completa de la entidad que publica la fuente." },
+  { letter: "D", index: 3,  header: "ano",                      required: true,  description: "Año del dato (2000–2099)." },
+  { letter: "E", index: 4,  header: "codigo_indicador",         required: true,  description: "Código del indicador en el catálogo (ej. AD_HOC_C7_ROTACION_PERSONAS)." },
+  { letter: "F", index: 5,  header: "indicador",                required: false, description: "Nombre legible del indicador." },
+  { letter: "G", index: 6,  header: "categoria_efqm",           required: false, description: "Categoría EFQM (ej. \"C7 Personas\")." },
+  { letter: "H", index: 7,  header: "pilar_ilunion",            required: false, description: "Pilar ILUNION." },
+  { letter: "I", index: 8,  header: "fuente_nivel",             required: false, description: "Nivel 1..Nivel 5." },
+  { letter: "J", index: 9,  header: "fuente_tipo",              required: true,  description: "EINF / Informe de gestión / Web corporativa / Certificación / Prensa / Estimación / Otro." },
+  { letter: "K", index: 10, header: "fuente_titulo",            required: false, description: "Título de la fuente." },
+  { letter: "L", index: 11, header: "url_validada",             required: false, description: "URL absoluta (http(s)://)." },
+  { letter: "M", index: 12, header: "valor_reportado",          required: false, description: "Número decimal (separador `.` o `,`)." },
+  { letter: "N", index: 13, header: "unidad",                   required: false, description: "Unidad tal cual aparece en la fuente." },
+  { letter: "O", index: 14, header: "comparabilidad",           required: false, description: "Alta / Media / Baja / No comparable." },
+  { letter: "P", index: 15, header: "observacion_metodologica", required: false, description: "Observación metodológica." },
+  { letter: "Q", index: 16, header: "decision_final",           required: false, description: "OK / PREVALIDADO IA / DESCARTAR / REVISION MANUAL / REVISAR / NUEVA / Pendiente / No aplica. Default NUEVA." },
+  { letter: "R", index: 17, header: "definicion_referencia",    required: false, description: "Definición del indicador según referencia." },
+  { letter: "S", index: 18, header: "unidad_base_referencia",   required: false, description: "Unidad base de referencia." },
+  { letter: "T", index: 19, header: "indicador_fuente",         required: false, description: "Cómo lo llamaba la fuente original." },
+  { letter: "U", index: 20, header: "encaje_indicador",         required: false, description: "Encaje con el KPI." },
+  { letter: "V", index: 21, header: "estado_auditoria",         required: false, description: "Estado de auditoría (Si/No, libre)." },
+  { letter: "W", index: 22, header: "id_data",                  required: false, description: "ID numérico del indicador en la BBDD origen." },
+  { letter: "X", index: 23, header: "tipo_compania",            required: false, description: "Clasificación: Entidad financiera / Aseguradora / Hotelera / etc." },
+  { letter: "Y", index: 24, header: "unidad_estandarizada",     required: false, description: "Unidad estándar derivada (M€, EUR, Personas, %, …)." },
+  { letter: "Z", index: 25, header: "valor_estandarizado",      required: false, description: "Valor numérico convertido a la unidad estandarizada." },
 ];
 
-export const EVIDENCIAS_SHEET_NAME = "evidencias";
+export const EVIDENCIAS_SHEET_NAME = "Evidencias";
 export const INSTRUCCIONES_SHEET_NAME = "instrucciones";
 export const KPIS_SHEET_NAME = "kpis";
 export const ENUMS_SHEET_NAME = "enums";
@@ -89,6 +104,23 @@ const numberFromCell = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Valor no numérico: "${v}"`,
+      });
+      return z.NEVER;
+    }
+    return n;
+  });
+
+const integerFromCell = z
+  .union([z.number(), z.string()])
+  .nullable()
+  .optional()
+  .transform((v, ctx) => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = typeof v === "number" ? v : Number(String(v).trim());
+    if (!Number.isInteger(n) || n < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `id debe ser entero positivo o vacío: "${v}"`,
       });
       return z.NEVER;
     }
@@ -195,32 +227,18 @@ const optionalEnum = <T extends readonly string[]>(values: T, label: string) =>
     });
 
 export const EvidenceRowSchema = z.object({
-  kpi_external_code:        requiredText("kpi_external_code", 120),
+  id:                       integerFromCell,
   empresa_comparable:       requiredText("empresa_comparable", 200),
-  ano:                      intYear,
   entidad_fuente:           optionalText,
+  ano:                      intYear,
+  codigo_indicador:         requiredText("codigo_indicador", 200),
+  indicador:                optionalText,
+  categoria_efqm:           optionalText,
+  pilar_ilunion:            optionalText,
   fuente_nivel:             optionalEnum(FUENTE_NIVEL, "fuente_nivel"),
-  fuente_tipo:              requiredText("fuente_tipo", 120),
+  fuente_tipo:              requiredText("fuente_tipo", 200),
   fuente_titulo:            optionalText,
   url_validada:             optionalUrl,
-  ubicacion_fuente:         optionalText,
-  texto_evidencia:          z
-    .union([z.string(), z.number()])
-    .nullable()
-    .optional()
-    .transform((v, ctx) => {
-      if (v === null || v === undefined) return null;
-      const s = String(v).trim();
-      if (s === "") return null;
-      if (s.length > 1000) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `texto_evidencia supera 1000 caracteres`,
-        });
-        return z.NEVER;
-      }
-      return s;
-    }),
   valor_reportado:          numberFromCell,
   unidad:                   optionalText,
   comparabilidad:           optionalEnum(COMPARABILIDAD, "comparabilidad"),
@@ -230,15 +248,23 @@ export const EvidenceRowSchema = z.object({
   unidad_base_referencia:   optionalText,
   indicador_fuente:         optionalText,
   encaje_indicador:         optionalText,
+  estado_auditoria:         optionalText,
+  id_data:                  optionalText,
+  tipo_compania:            optionalText,
+  unidad_estandarizada:     optionalText,
+  valor_estandarizado:      numberFromCell,
 });
 
 export type EvidenceRow = z.infer<typeof EvidenceRowSchema>;
 
-/** Clave natural usada para el upsert (V3 §3.4). */
+/**
+ * Clave natural usada para upsert: codigo_indicador + empresa + año.
+ * (project_id ya está implícito en el contexto del proyecto.)
+ */
 export function naturalKey(row: {
-  kpi_external_code: string;
+  codigo_indicador: string;
   empresa_comparable: string;
   ano: number;
 }): string {
-  return `${row.kpi_external_code}|${row.empresa_comparable.toLowerCase()}|${row.ano}`;
+  return `${row.codigo_indicador}|${row.empresa_comparable.toLowerCase()}|${row.ano}`;
 }

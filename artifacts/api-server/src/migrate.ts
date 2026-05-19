@@ -122,8 +122,11 @@ CREATE TABLE IF NOT EXISTS evidencias (
   empresa_comparable       text NOT NULL,
   entidad_fuente           text,
   ano                      integer,
+  codigo_indicador         text,
   indicador                text,
   categoria_efqm           text,
+  pilar_ilunion            text,
+  id_data                  text,
   fuente_nivel             text,
   fuente_tipo              text NOT NULL,
   fuente_titulo            text,
@@ -180,6 +183,11 @@ CREATE TABLE IF NOT EXISTS api_keys (
   revoked_at    timestamptz
 );
 CREATE INDEX IF NOT EXISTS api_keys_project_idx ON api_keys(project_id);
+
+-- Migraciones idempotentes para columnas añadidas tras el primer deploy.
+ALTER TABLE evidencias ADD COLUMN IF NOT EXISTS codigo_indicador text;
+ALTER TABLE evidencias ADD COLUMN IF NOT EXISTS pilar_ilunion    text;
+ALTER TABLE evidencias ADD COLUMN IF NOT EXISTS id_data          text;
 `;
 
 export async function runMigrations(): Promise<void> {
