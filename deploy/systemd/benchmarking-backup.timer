@@ -1,5 +1,5 @@
 [Unit]
-Description=Backup diario de Asset Manager Postgres
+Description=Backup diario de Benchmarking Postgres
 
 [Timer]
 # Diariamente a las 03:30 UTC. Persistent=true → si el server estuvo apagado,

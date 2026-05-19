@@ -40,7 +40,7 @@ jobs:
           port: 22
           script: |
             set -euo pipefail
-            cd ~/asset-manager
+            cd ~/benchmarking
             git fetch --all
             git reset --hard origin/main
             ./deploy/scripts/deploy.sh

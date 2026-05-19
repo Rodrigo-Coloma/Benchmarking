@@ -1,4 +1,4 @@
-name: asset-manager
+name: benchmarking
 
 # Compose base (dev/prod común). Para producción, combina con
 #   docker-compose.prod.yml (port-binding a 127.0.0.1, restart policy).

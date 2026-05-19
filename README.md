@@ -1,6 +1,7 @@
-# Asset Manager
+# Benchmarking
 
-Plataforma multi-proyecto de benchmarking y validación de evidencias.
+Plataforma multi-proyecto de benchmarking y validación de evidencias
+(producto: **Asset Manager**, repo: `benchmarking`).
 Esqueleto del monorepo construido a partir de los documentos
 `REBUILD_PROMPT.md` (V1), `REBUILD_PROMPT_V2.md` (V2) y
 `REBUILD_PROMPT_V3.md` (V3).

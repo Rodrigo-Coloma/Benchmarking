@@ -6,7 +6,7 @@ set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/postgres}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
-COMPOSE_FILE="${COMPOSE_FILE:-/home/rodrigo/asset-manager/deploy/docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-/home/rodrigo/benchmarking/deploy/docker-compose.yml}"
 
 STAMP=$(date -u +"%Y%m%dT%H%M%SZ")
 FILE="$BACKUP_DIR/assetmanager_${STAMP}.sql.gz"
@@ -26,4 +26,4 @@ SIZE=$(du -h "$FILE" | cut -f1)
 echo "✓ Backup completado: $FILE ($SIZE)"
 
 # Opcional: sync a R2.
-# rclone copy "$FILE" r2:asset-manager-backups/postgres/
+# rclone copy "$FILE" r2:benchmarking-backups/postgres/

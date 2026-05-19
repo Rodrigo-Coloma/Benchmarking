@@ -1,0 +1,10 @@
+[Unit]
+Description=Benchmarking — pg_dump diario
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=rodrigo
+WorkingDirectory=/home/rodrigo/benchmarking
+ExecStart=/home/rodrigo/benchmarking/deploy/scripts/backup.sh
