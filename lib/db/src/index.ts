@@ -1,5 +1,10 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool, type PoolConfig } from "pg";
+// `pg` es CJS — Node ESM no puede destructurar `Pool` con named imports.
+// Importamos el namespace default y desestructuramos en runtime; el tipo
+// `Pool` se importa por separado porque los `type` imports son inocuos en
+// runtime (TypeScript los elimina al compilar).
+import pg, { type Pool, type PoolConfig } from "pg";
+const PoolCtor = pg.Pool;
 import * as schema from "./schema/index.js";
 
 export * from "./schema/index.js";
@@ -23,7 +28,7 @@ export function createDb(opts: CreateDbOptions = {}): { pool: Pool; db: Db } {
     throw new Error("DATABASE_URL no está configurada");
   }
 
-  const pool = new Pool({
+  const pool = new PoolCtor({
     connectionString,
     max: 10,
     idleTimeoutMillis: 30_000,
