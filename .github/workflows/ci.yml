@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: assetmanager
+          POSTGRES_PASSWORD: assetmanager
+          POSTGRES_DB: assetmanager
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U assetmanager"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm -r --if-present run test
+        env:
+          DATABASE_URL: postgres://assetmanager:assetmanager@localhost:5432/assetmanager
+          SESSION_SECRET: ci-only-session-secret-1234567890abcd
+          ARGON2_SECRET: ci-only-argon2-secret-1234567890abcd
+      - run: pnpm -r --if-present run build

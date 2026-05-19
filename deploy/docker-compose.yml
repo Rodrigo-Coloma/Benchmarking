@@ -1,0 +1,79 @@
+name: asset-manager
+
+# Compose base (dev/prod común). Para producción, combina con
+#   docker-compose.prod.yml (port-binding a 127.0.0.1, restart policy).
+#
+# Uso típico en el servidor:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: assetmanager
+      POSTGRES_USER: assetmanager
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assetmanager -d assetmanager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  api:
+    build:
+      context: ..
+      dockerfile: artifacts/api-server/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://assetmanager:${POSTGRES_PASSWORD}@postgres:5432/assetmanager
+      PORT: 8080
+      BASE_PATH: /evidencias
+      ROLE: api
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/evidencias/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks: [internal, edge]
+
+  worker:
+    build:
+      context: ..
+      dockerfile: artifacts/api-server/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://assetmanager:${POSTGRES_PASSWORD}@postgres:5432/assetmanager
+      ROLE: worker
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [internal]
+
+  web:
+    build:
+      context: ..
+      dockerfile: artifacts/web/Dockerfile
+      args:
+        BASE_PATH: /evidencias/
+    networks: [edge]
+
+networks:
+  internal:
+    driver: bridge
+  edge:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt

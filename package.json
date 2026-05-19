@@ -1,0 +1,24 @@
+{
+  "name": "asset-manager",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Asset Manager — plataforma multi-proyecto de benchmarking y validación de evidencias (V2 base)",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "preinstall": "node -e \"if (!process.env.npm_execpath || !/pnpm/i.test(process.env.npm_execpath)) { console.error('Use pnpm, not npm/yarn'); process.exit(1); }\"",
+    "typecheck": "pnpm -r --parallel run typecheck",
+    "build": "pnpm run typecheck && pnpm -r run build",
+    "dev:api": "pnpm --filter @workspace/api-server run dev",
+    "dev:web": "pnpm --filter @workspace/web run dev",
+    "db:push": "pnpm --filter @workspace/db run push",
+    "codegen": "pnpm --filter @workspace/api-spec run codegen",
+    "test": "pnpm -r --parallel run test",
+    "lint": "pnpm -r --parallel run lint"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}

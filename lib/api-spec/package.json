@@ -1,0 +1,18 @@
+{
+  "name": "@workspace/api-spec",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "codegen": "orval --config ./orval.config.ts && node ./scripts/patch-api-zod.mjs"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "orval": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@workspace/api-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.mjs",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node ./build.mjs",
+    "start": "node --enable-source-maps dist/index.mjs",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "@workspace/api-zod": "workspace:*",
+    "argon2": "catalog:",
+    "exceljs": "catalog:",
+    "xlsx": "catalog:",
+    "compression": "catalog:",
+    "cookie-parser": "catalog:",
+    "cors": "catalog:",
+    "drizzle-orm": "catalog:",
+    "express": "catalog:",
+    "express-rate-limit": "catalog:",
+    "express-session": "catalog:",
+    "helmet": "catalog:",
+    "multer": "catalog:",
+    "pg": "catalog:",
+    "pg-boss": "catalog:",
+    "pino": "catalog:",
+    "pino-http": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/compression": "1.7.5",
+    "@types/cookie-parser": "1.4.7",
+    "@types/cors": "2.8.17",
+    "@types/express": "5.0.0",
+    "@types/express-session": "1.18.1",
+    "@types/multer": "1.4.12",
+    "@types/node": "22.10.2",
+    "@types/pg": "8.11.10",
+    "@types/supertest": "6.0.2",
+    "esbuild": "catalog:",
+    "supertest": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

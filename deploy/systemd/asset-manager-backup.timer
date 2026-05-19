@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup diario de Asset Manager Postgres
+
+[Timer]
+# Diariamente a las 03:30 UTC. Persistent=true → si el server estuvo apagado,
+# se lanza al volver.
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

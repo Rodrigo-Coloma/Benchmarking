@@ -1,0 +1,1353 @@
+openapi: 3.1.0
+info:
+  title: Asset Manager API
+  version: 0.1.0
+  description: |
+    API multi-proyecto de benchmarking y validación de evidencias.
+    PR1 (V2 base): auth, proyectos, miembros, invitaciones, catálogo de KPIs,
+    evidencias CRUD, jobs (placeholder) y API keys.
+servers:
+  - url: /api
+    description: Mismo origen (Vite proxy en dev, Nginx en prod)
+tags:
+  - name: health
+  - name: auth
+  - name: projects
+  - name: members
+  - name: invitations
+  - name: kpis
+  - name: evidencias
+  - name: jobs
+  - name: api-keys
+
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /auth/signup:
+    post:
+      tags: [auth]
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupBody"
+      responses:
+        "201":
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      responses:
+        "204":
+          description: Sesión cerrada
+
+  /auth/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      responses:
+        "200":
+          description: Usuario actual
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+    patch:
+      tags: [auth]
+      operationId: patchMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeBody"
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      responses:
+        "200":
+          description: Lista de proyectos del usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectWithRole"
+    post:
+      tags: [projects]
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Proyecto creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [projects]
+      operationId: getProject
+      responses:
+        "200":
+          description: Detalle del proyecto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectWithRole"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [projects]
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Proyecto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      tags: [projects]
+      operationId: deleteProject
+      responses:
+        "204":
+          description: Eliminado
+
+  /projects/{projectId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      tags: [projects]
+      operationId: archiveProject
+      responses:
+        "200":
+          description: Archivado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{projectId}/members:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [members]
+      operationId: listMembers
+      responses:
+        "200":
+          description: Miembros del proyecto
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+
+  /projects/{projectId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: userId
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [members]
+      operationId: updateMemberRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberBody"
+      responses:
+        "200":
+          description: Miembro actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+    delete:
+      tags: [members]
+      operationId: removeMember
+      responses:
+        "204":
+          description: Eliminado
+
+  /projects/{projectId}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [invitations]
+      operationId: listInvitations
+      responses:
+        "200":
+          description: Invitaciones pendientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+    post:
+      tags: [invitations]
+      operationId: createInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationBody"
+      responses:
+        "201":
+          description: Invitación creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationWithLink"
+
+  /invitations/{token}:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+    get:
+      tags: [invitations]
+      operationId: getInvitation
+      security: []
+      responses:
+        "200":
+          description: Preview de invitación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationPreview"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /invitations/{token}/accept:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+    post:
+      tags: [invitations]
+      operationId: acceptInvitation
+      responses:
+        "200":
+          description: Invitación aceptada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+
+  /projects/{projectId}/kpis:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [kpis]
+      operationId: listKpis
+      responses:
+        "200":
+          description: Catálogo de KPIs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Kpi"
+    post:
+      tags: [kpis]
+      operationId: createKpi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKpiBody"
+      responses:
+        "201":
+          description: KPI creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kpi"
+
+  /projects/{projectId}/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: kpiId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [kpis]
+      operationId: getKpi
+      responses:
+        "200":
+          description: Detalle KPI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kpi"
+    patch:
+      tags: [kpis]
+      operationId: updateKpi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateKpiBody"
+      responses:
+        "200":
+          description: KPI actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Kpi"
+    delete:
+      tags: [kpis]
+      operationId: deleteKpi
+      responses:
+        "204":
+          description: Archivado
+
+  /projects/{projectId}/evidencias:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: query
+        name: kpi_id
+        schema: { type: string, format: uuid }
+      - in: query
+        name: empresa_comparable
+        schema: { type: string }
+      - in: query
+        name: decision_final
+        schema: { type: string }
+      - in: query
+        name: search
+        schema: { type: string }
+    get:
+      tags: [evidencias]
+      operationId: listEvidencias
+      responses:
+        "200":
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evidencia"
+    post:
+      tags: [evidencias]
+      operationId: createEvidencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEvidenciaBody"
+      responses:
+        "201":
+          description: Creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidencia"
+
+  /projects/{projectId}/evidencias/{evId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: evId
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [evidencias]
+      operationId: getEvidencia
+      responses:
+        "200":
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidencia"
+    patch:
+      tags: [evidencias]
+      operationId: updateEvidencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEvidenciaBody"
+      responses:
+        "200":
+          description: Actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidencia"
+    delete:
+      tags: [evidencias]
+      operationId: deleteEvidencia
+      responses:
+        "204":
+          description: Eliminada
+
+  /projects/{projectId}/kpi-ingestions:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      tags: [kpis]
+      operationId: uploadKpiIngestion
+      summary: Subir XLSX, descubrir schema con IA y calcular diff
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Preview generado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiIngestionPreview"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    get:
+      tags: [kpis]
+      operationId: listKpiIngestions
+      responses:
+        "200":
+          description: Historial
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KpiIngestionRun"
+
+  /projects/{projectId}/kpi-ingestions/{runId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [kpis]
+      operationId: getKpiIngestion
+      responses:
+        "200":
+          description: Detalle con diff completo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiIngestionRunWithDiff"
+    delete:
+      tags: [kpis]
+      operationId: discardKpiIngestion
+      responses:
+        "204":
+          description: Descartado
+
+  /projects/{projectId}/kpi-ingestions/{runId}/commit:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [kpis]
+      operationId: commitKpiIngestion
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                override_schema:
+                  type: object
+                  additionalProperties: true
+                accepted_changes:
+                  type: object
+                  properties:
+                    add: { type: array, items: { type: string } }
+                    update: { type: array, items: { type: string } }
+                    remove: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: Aplicado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summary, applied]
+                properties:
+                  summary:
+                    type: object
+                    additionalProperties: true
+                  applied: { type: boolean }
+
+  /projects/{projectId}/kpi-schema-templates:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [kpis]
+      operationId: listKpiSchemaTemplates
+      responses:
+        "200":
+          description: Templates cacheados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KpiSchemaTemplate"
+
+  /projects/{projectId}/evidencias/import:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      tags: [evidencias]
+      operationId: importEvidencias
+      summary: Subir un XLSX y calcular el diff (status="previewed")
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                mode:
+                  type: string
+                  enum: [upsert, replace]
+                  default: upsert
+      responses:
+        "201":
+          description: Preview generado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenciaImportRunPreview"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+
+  /projects/{projectId}/evidencias/imports:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [evidencias]
+      operationId: listEvidenciaImports
+      responses:
+        "200":
+          description: Historial de imports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EvidenciaImportRun"
+
+  /projects/{projectId}/evidencias/imports/{runId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [evidencias]
+      operationId: getEvidenciaImport
+      responses:
+        "200":
+          description: Detalle (incluye diff completo)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidenciaImportRunWithDiff"
+    delete:
+      tags: [evidencias]
+      operationId: discardEvidenciaImport
+      responses:
+        "204":
+          description: Descartado
+
+  /projects/{projectId}/evidencias/imports/{runId}/commit:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: runId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [evidencias]
+      operationId: commitEvidenciaImport
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dry_run: { type: boolean, default: false }
+                confirm_project_name:
+                  type: string
+                  description: Obligatorio si mode=replace.
+      responses:
+        "200":
+          description: Resultado del commit
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summary, applied]
+                properties:
+                  summary:
+                    $ref: "#/components/schemas/EvidenciaImportSummary"
+                  applied: { type: boolean }
+
+  /projects/{projectId}/evidencias/template.xlsx:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [evidencias]
+      operationId: downloadEvidenciasTemplate
+      responses:
+        "200":
+          description: Plantilla XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+
+  /projects/{projectId}/evidencias/download.xlsx:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [evidencias]
+      operationId: downloadEvidenciasXlsx
+      responses:
+        "200":
+          description: Export simétrico
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+
+  /jobs/{jobId}:
+    parameters:
+      - in: path
+        name: jobId
+        required: true
+        schema: { type: string }
+    get:
+      tags: [jobs]
+      operationId: getJob
+      responses:
+        "200":
+          description: Estado del job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /projects/{projectId}/api-keys:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [api-keys]
+      operationId: listApiKeys
+      responses:
+        "200":
+          description: API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+    post:
+      tags: [api-keys]
+      operationId: createApiKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyBody"
+      responses:
+        "201":
+          description: Creada (devuelve el token plano UNA SOLA VEZ)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedApiKey"
+
+  /projects/{projectId}/api-keys/{keyId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - in: path
+        name: keyId
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [api-keys]
+      operationId: revokeApiKey
+      responses:
+        "204":
+          description: Revocada
+
+components:
+  parameters:
+    ProjectId:
+      in: path
+      name: projectId
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Unauthenticated:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ValidationFailed:
+      description: Validation Failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+        services:
+          type: object
+          additionalProperties: { type: string }
+
+    ApiError:
+      type: object
+      required: [error, code]
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum:
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - INSUFFICIENT_ROLE
+            - PROJECT_NOT_FOUND
+            - PROJECT_SLUG_TAKEN
+            - KPI_NOT_FOUND
+            - KPI_DUPLICATE
+            - EXCEL_PARSE_FAILED
+            - EXCEL_NO_CHANGES
+            - INGESTION_NOT_FOUND
+            - EVIDENCE_NOT_FOUND
+            - INVITATION_INVALID
+            - INVITATION_EXPIRED
+            - VALIDATION_FAILED
+            - RAG_UNAVAILABLE
+            - AGENT_FAILED
+            - INTERNAL_ERROR
+        details:
+          type: object
+          nullable: true
+        traceId: { type: string }
+
+    User:
+      type: object
+      required: [id, email, name, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        last_login_at: { type: string, format: date-time, nullable: true }
+
+    SignupBody:
+      type: object
+      required: [email, password, name]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10 }
+        name: { type: string, minLength: 2 }
+
+    LoginBody:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    UpdateMeBody:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+
+    Project:
+      type: object
+      required:
+        [id, slug, name, description, created_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: string }
+        framework: { type: string, nullable: true }
+        framework_context:
+          type: object
+          nullable: true
+          additionalProperties: true
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        archived_at: { type: string, format: date-time, nullable: true }
+
+    ProjectWithRole:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          required: [role]
+          properties:
+            role:
+              type: string
+              enum: [owner, editor, viewer]
+
+    CreateProjectBody:
+      type: object
+      required: [name, description]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        framework: { type: string, nullable: true }
+        framework_context:
+          type: object
+          additionalProperties: true
+          nullable: true
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+          nullable: true
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10, maxLength: 5000 }
+        framework: { type: string, nullable: true }
+        framework_context:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    Member:
+      type: object
+      required: [user_id, project_id, role, added_at, email, name]
+      properties:
+        project_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        role:
+          type: string
+          enum: [owner, editor, viewer]
+        email: { type: string, format: email }
+        name: { type: string }
+        added_at: { type: string, format: date-time }
+
+    UpdateMemberBody:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [owner, editor, viewer]
+
+    Invitation:
+      type: object
+      required: [id, project_id, email, role, invited_at, expires_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role:
+          type: string
+          enum: [editor, viewer]
+        invited_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        accepted_at: { type: string, format: date-time, nullable: true }
+
+    InvitationWithLink:
+      allOf:
+        - $ref: "#/components/schemas/Invitation"
+        - type: object
+          required: [inviteLink]
+          properties:
+            inviteLink: { type: string }
+
+    InvitationPreview:
+      type: object
+      required: [email, role, project_name, expires_at]
+      properties:
+        email: { type: string }
+        role: { type: string, enum: [editor, viewer] }
+        project_name: { type: string }
+        project_slug: { type: string }
+        expires_at: { type: string, format: date-time }
+
+    CreateInvitationBody:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email }
+        role:
+          type: string
+          enum: [editor, viewer]
+
+    Kpi:
+      type: object
+      required: [id, project_id, external_code, name, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        external_code: { type: string }
+        name: { type: string }
+        scope: { type: string, nullable: true }
+        responsible_area: { type: string, nullable: true }
+        direction:
+          type: string
+          enum: [ASCENDENTE, DESCENDENTE, NEUTRO]
+          nullable: true
+        standard_unit: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        comparable_companies:
+          type: array
+          nullable: true
+          items: { type: string }
+        extra:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        archived_at: { type: string, format: date-time, nullable: true }
+
+    CreateKpiBody:
+      type: object
+      required: [external_code, name]
+      properties:
+        external_code: { type: string, minLength: 1, maxLength: 80 }
+        name: { type: string, minLength: 1, maxLength: 300 }
+        scope: { type: string, nullable: true }
+        responsible_area: { type: string, nullable: true }
+        direction:
+          type: string
+          enum: [ASCENDENTE, DESCENDENTE, NEUTRO]
+          nullable: true
+        standard_unit: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        comparable_companies:
+          type: array
+          items: { type: string }
+          nullable: true
+        extra:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    UpdateKpiBody:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 300 }
+        scope: { type: string, nullable: true }
+        responsible_area: { type: string, nullable: true }
+        direction:
+          type: string
+          enum: [ASCENDENTE, DESCENDENTE, NEUTRO]
+          nullable: true
+        standard_unit: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        comparable_companies:
+          type: array
+          items: { type: string }
+          nullable: true
+        extra:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    Evidencia:
+      type: object
+      required:
+        [id, project_id, empresa_comparable, fuente_tipo, created_at]
+      properties:
+        id: { type: integer }
+        project_id: { type: string, format: uuid }
+        kpi_id: { type: string, format: uuid, nullable: true }
+        empresa_comparable: { type: string }
+        entidad_fuente: { type: string, nullable: true }
+        ano: { type: integer, nullable: true }
+        indicador: { type: string, nullable: true }
+        categoria_efqm: { type: string, nullable: true }
+        fuente_nivel: { type: string, nullable: true }
+        fuente_tipo: { type: string }
+        fuente_titulo: { type: string, nullable: true }
+        url_validada: { type: string, nullable: true }
+        ubicacion_fuente: { type: string, nullable: true }
+        texto_evidencia: { type: string, nullable: true }
+        valor_reportado: { type: number, nullable: true }
+        unidad: { type: string, nullable: true }
+        comparabilidad: { type: string, nullable: true }
+        observacion_metodologica: { type: string, nullable: true }
+        decision_final: { type: string, nullable: true }
+        definicion_referencia: { type: string, nullable: true }
+        unidad_base_referencia: { type: string, nullable: true }
+        indicador_fuente: { type: string, nullable: true }
+        encaje_indicador: { type: string, nullable: true }
+        estado_auditoria: { type: string, nullable: true }
+        tipo_compania: { type: string, nullable: true }
+        unidad_estandarizada: { type: string, nullable: true }
+        valor_estandarizado: { type: number, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CreateEvidenciaBody:
+      type: object
+      required: [empresa_comparable, fuente_tipo]
+      properties:
+        kpi_id: { type: string, format: uuid, nullable: true }
+        empresa_comparable: { type: string }
+        entidad_fuente: { type: string, nullable: true }
+        ano: { type: integer, nullable: true }
+        fuente_nivel: { type: string, nullable: true }
+        fuente_tipo: { type: string }
+        fuente_titulo: { type: string, nullable: true }
+        url_validada: { type: string, nullable: true }
+        ubicacion_fuente: { type: string, nullable: true }
+        texto_evidencia: { type: string, nullable: true }
+        valor_reportado: { type: number, nullable: true }
+        unidad: { type: string, nullable: true }
+        comparabilidad: { type: string, nullable: true }
+        observacion_metodologica: { type: string, nullable: true }
+        decision_final: { type: string, nullable: true }
+
+    UpdateEvidenciaBody:
+      allOf:
+        - $ref: "#/components/schemas/CreateEvidenciaBody"
+
+    KpiSchemaTemplate:
+      type: object
+      required: [id, project_id, header_signature, sheet_name, header_row, column_mapping, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        header_signature: { type: string }
+        sheet_name: { type: string }
+        header_row: { type: integer }
+        column_mapping:
+          type: object
+          additionalProperties: true
+        skip_rows:
+          type: array
+          items: { type: integer }
+        notes: { type: string, nullable: true }
+        uses_count: { type: integer }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    KpiIngestionRun:
+      type: object
+      required: [id, project_id, status, filename, created_at, summary]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        filename: { type: string }
+        file_hash: { type: string }
+        status:
+          type: string
+          enum: [previewed, committed, discarded, failed]
+        summary:
+          type: object
+          additionalProperties: true
+        error: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        committed_at: { type: string, format: date-time, nullable: true }
+
+    KpiIngestionRunWithDiff:
+      allOf:
+        - $ref: "#/components/schemas/KpiIngestionRun"
+        - type: object
+          required: [diff]
+          properties:
+            diff:
+              type: object
+              additionalProperties: true
+
+    KpiIngestionPreview:
+      type: object
+      required: [run, needs_review]
+      properties:
+        run:
+          $ref: "#/components/schemas/KpiIngestionRun"
+        needs_review: { type: boolean }
+        template_used:
+          oneOf:
+            - $ref: "#/components/schemas/KpiSchemaTemplate"
+            - type: "null"
+        discovery:
+          type: object
+          nullable: true
+          properties:
+            low_confidence: { type: boolean }
+            attempts: { type: integer }
+            usage:
+              type: object
+              properties:
+                input_tokens: { type: integer }
+                output_tokens: { type: integer }
+                estimated_cost_usd: { type: number }
+
+    EvidenciaImportSummary:
+      type: object
+      required: [filename, file_hash, mode, totals]
+      properties:
+        filename: { type: string }
+        file_hash: { type: string }
+        mode:
+          type: string
+          enum: [upsert, replace]
+        totals:
+          type: object
+          required:
+            - rows_in_file
+            - parse_errors
+            - new
+            - updated
+            - unchanged
+            - kpi_not_found
+            - will_remove_in_replace
+          properties:
+            rows_in_file: { type: integer }
+            parse_errors: { type: integer }
+            new: { type: integer }
+            updated: { type: integer }
+            unchanged: { type: integer }
+            kpi_not_found: { type: integer }
+            will_remove_in_replace: { type: integer }
+
+    EvidenciaImportRun:
+      type: object
+      required: [id, project_id, status, mode, filename, created_at, summary]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        filename: { type: string }
+        file_hash: { type: string }
+        mode:
+          type: string
+          enum: [upsert, replace]
+        status:
+          type: string
+          enum: [previewed, committed, discarded, failed]
+        summary:
+          $ref: "#/components/schemas/EvidenciaImportSummary"
+        error: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        committed_at: { type: string, format: date-time, nullable: true }
+
+    EvidenciaImportRunWithDiff:
+      allOf:
+        - $ref: "#/components/schemas/EvidenciaImportRun"
+        - type: object
+          required: [diff]
+          properties:
+            diff:
+              type: object
+              additionalProperties: true
+
+    EvidenciaImportRunPreview:
+      type: object
+      required: [run, summary]
+      properties:
+        run:
+          $ref: "#/components/schemas/EvidenciaImportRun"
+        summary:
+          $ref: "#/components/schemas/EvidenciaImportSummary"
+
+    Job:
+      type: object
+      required: [id, name, state]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        state:
+          type: string
+          enum: [created, queued, active, completed, failed, cancelled]
+        data:
+          type: object
+          additionalProperties: true
+        result:
+          type: object
+          additionalProperties: true
+        started_on: { type: string, format: date-time, nullable: true }
+        completed_on: { type: string, format: date-time, nullable: true }
+
+    ApiKey:
+      type: object
+      required: [id, project_id, name, scopes, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        name: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        created_at: { type: string, format: date-time }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        revoked_at: { type: string, format: date-time, nullable: true }
+
+    CreateApiKeyBody:
+      type: object
+      required: [name, scopes]
+      properties:
+        name: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+          minItems: 1
+
+    CreatedApiKey:
+      allOf:
+        - $ref: "#/components/schemas/ApiKey"
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+              description: Token plano. Sólo se devuelve UNA VEZ.
+
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: assetmgr.sid
+
+security:
+  - sessionCookie: []

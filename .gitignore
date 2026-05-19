@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Env y secrets
+.env
+.env.local
+.env.*.local
+deploy/secrets/*
+!deploy/secrets/.gitkeep
+deploy/.env
+
+# Logs
+*.log
+logs/
+
+# Uploads / storage temporal
+/tmp/uploads/
+storage/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Vitest / coverage
+coverage/
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Generados por orval — se commitean para que el repo sea utilizable sin pnpm install previo,
+# pero descomenta si prefieres regenerar en CI:
+# lib/api-zod/src/generated/
+# lib/api-client-react/src/generated/
