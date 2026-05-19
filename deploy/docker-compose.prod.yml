@@ -16,7 +16,7 @@ services:
   api:
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8090:8080"   # host:container — 8090 al host, 8080 dentro
 
   worker:
     restart: unless-stopped
@@ -24,4 +24,4 @@ services:
   web:
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:8091:80"     # host:container — 8091 al host, 80 dentro
