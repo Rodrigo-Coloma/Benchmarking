@@ -1,9 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { DIRECTIONS } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { DIRECTIONS, getDb, projects } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { requireProjectMembership } from "../middlewares/requireProjectMembership.js";
 import * as svc from "../services/kpis.service.js";
+import { buildKpisTemplate } from "../lib/excel/kpis/template.js";
+import { NotFoundError } from "../lib/errors.js";
 
 export const kpisRouter = Router({ mergeParams: true });
 
@@ -23,6 +26,47 @@ const createSchema = z.object({
 const updateSchema = createSchema.partial().omit({ external_code: true });
 
 kpisRouter.use(requireAuth);
+
+/**
+ * GET /api/projects/:projectId/kpis/template.xlsx
+ *   Plantilla con columnas canónicas. Va antes que `/:kpiId` para que el
+ *   router no la confunda con un kpiId.
+ */
+kpisRouter.get(
+  "/template.xlsx",
+  requireProjectMembership(),
+  async (req, res, next) => {
+    try {
+      const db = getDb();
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.id, req.params.projectId),
+      });
+      if (!project) {
+        throw new NotFoundError(
+          "PROJECT_NOT_FOUND",
+          "Proyecto no encontrado",
+        );
+      }
+      const buffer = await buildKpisTemplate({
+        projectName: project.name,
+        projectFramework: project.framework,
+      });
+      res
+        .status(200)
+        .setHeader(
+          "Content-Type",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        .setHeader(
+          "Content-Disposition",
+          `attachment; filename="kpis-${project.slug}-template.xlsx"`,
+        )
+        .send(buffer);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 kpisRouter.get(
   "/",

@@ -226,3 +226,133 @@ export const discardKpiIngestion = (projectId: string, runId: string) =>
     url: `/projects/${projectId}/kpi-ingestions/${runId}`,
     method: "DELETE",
   });
+
+/** URLs absolutas para descargas — el fetch nativo lleva las cookies. */
+export function kpisTemplateUrl(projectId: string): string {
+  return `${getBaseUrl()}/projects/${projectId}/kpis/template.xlsx`;
+}
+
+export function evidenciasTemplateUrl(projectId: string): string {
+  return `${getBaseUrl()}/projects/${projectId}/evidencias/template.xlsx`;
+}
+
+export function evidenciasDownloadUrl(projectId: string): string {
+  return `${getBaseUrl()}/projects/${projectId}/evidencias/download.xlsx`;
+}
+
+// ---------- Evidencias (PR2) ----------
+
+export interface Evidencia {
+  id: number;
+  project_id: string;
+  kpi_id: string | null;
+  empresa_comparable: string;
+  entidad_fuente: string | null;
+  ano: number | null;
+  fuente_nivel: string | null;
+  fuente_tipo: string;
+  fuente_titulo: string | null;
+  url_validada: string | null;
+  ubicacion_fuente: string | null;
+  texto_evidencia: string | null;
+  valor_reportado: number | null;
+  unidad: string | null;
+  comparabilidad: string | null;
+  observacion_metodologica: string | null;
+  decision_final: string | null;
+  tipo_compania: string | null;
+  created_at: string;
+}
+
+export interface EvidenciaImportRun {
+  id: string;
+  project_id: string;
+  filename: string;
+  file_hash: string;
+  mode: "upsert" | "replace";
+  status: "previewed" | "committed" | "discarded" | "failed";
+  summary: {
+    filename: string;
+    file_hash: string;
+    mode: "upsert" | "replace";
+    totals: {
+      rows_in_file: number;
+      parse_errors: number;
+      new: number;
+      updated: number;
+      unchanged: number;
+      kpi_not_found: number;
+      will_remove_in_replace: number;
+    };
+  };
+  diff: Record<string, unknown>;
+  error: string | null;
+  created_at: string;
+  committed_at: string | null;
+}
+
+export const listEvidencias = (
+  projectId: string,
+  filters?: {
+    kpi_id?: string;
+    empresa_comparable?: string;
+    decision_final?: string;
+    search?: string;
+  },
+) =>
+  customFetch<Evidencia[]>({
+    url: `/projects/${projectId}/evidencias`,
+    params: filters,
+  });
+
+export async function uploadEvidenciasXlsx(
+  projectId: string,
+  file: File,
+  mode: "upsert" | "replace" = "upsert",
+): Promise<{ run: EvidenciaImportRun; summary: EvidenciaImportRun["summary"] }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("mode", mode);
+
+  const res = await fetch(
+    `${getBaseUrl()}/projects/${projectId}/evidencias/import`,
+    {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    },
+  );
+  if (!res.ok) {
+    let body: ApiErrorBody = {
+      error: res.statusText || "HTTP error",
+      code: "INTERNAL_ERROR",
+    };
+    try {
+      body = (await res.json()) as ApiErrorBody;
+    } catch {
+      /* keep */
+    }
+    throw new ApiError(res.status, body);
+  }
+  return (await res.json()) as {
+    run: EvidenciaImportRun;
+    summary: EvidenciaImportRun["summary"];
+  };
+}
+
+export const commitEvidenciaImport = (
+  projectId: string,
+  runId: string,
+  body?: { dry_run?: boolean; confirm_project_name?: string },
+) =>
+  customFetch<{ summary: unknown; applied: boolean }>({
+    url: `/projects/${projectId}/evidencias/imports/${runId}/commit`,
+    method: "POST",
+    data: body ?? {},
+  });
+
+export const discardEvidenciaImport = (projectId: string, runId: string) =>
+  customFetch<void>({
+    url: `/projects/${projectId}/evidencias/imports/${runId}`,
+    method: "DELETE",
+  });

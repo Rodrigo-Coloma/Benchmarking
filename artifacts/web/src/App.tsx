@@ -13,6 +13,7 @@ import { NewProjectPage } from "./pages/NewProject";
 import { ProjectOverviewPage } from "./pages/ProjectOverview";
 import { KpiImportPage } from "./pages/KpiImport";
 import { KpiImportPreviewPage } from "./pages/KpiImportPreview";
+import { EvidenciasPage } from "./pages/Evidencias";
 import { NotFoundPage } from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ function AuthedRoutes() {
         path="/projects/:id/kpis/import/:runId"
         component={KpiImportPreviewPage}
       />
+      <Route path="/projects/:id/evidencias" component={EvidenciasPage} />
       <Route component={NotFoundPage} />
     </Switch>
   );
