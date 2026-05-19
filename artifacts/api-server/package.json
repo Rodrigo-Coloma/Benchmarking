@@ -15,6 +15,7 @@
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/api-zod": "workspace:*",
+    "@anthropic-ai/sdk": "catalog:",
     "argon2": "catalog:",
     "exceljs": "catalog:",
     "xlsx": "catalog:",
