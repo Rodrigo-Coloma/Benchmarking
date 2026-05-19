@@ -11,6 +11,8 @@ import { SignupPage } from "./pages/Signup";
 import { ProjectsPage } from "./pages/Projects";
 import { NewProjectPage } from "./pages/NewProject";
 import { ProjectOverviewPage } from "./pages/ProjectOverview";
+import { KpiImportPage } from "./pages/KpiImport";
+import { KpiImportPreviewPage } from "./pages/KpiImportPreview";
 import { NotFoundPage } from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -31,6 +33,11 @@ function AuthedRoutes() {
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/projects/new" component={NewProjectPage} />
       <Route path="/projects/:id" component={ProjectOverviewPage} />
+      <Route path="/projects/:id/kpis/import" component={KpiImportPage} />
+      <Route
+        path="/projects/:id/kpis/import/:runId"
+        component={KpiImportPreviewPage}
+      />
       <Route component={NotFoundPage} />
     </Switch>
   );

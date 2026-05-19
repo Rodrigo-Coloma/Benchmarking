@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
+import { Sparkles } from "lucide-react";
 import * as api from "../lib/api";
 import { qk } from "../lib/queryKeys";
+import { Button } from "../components/Button";
 
 export function ProjectOverviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,17 +46,35 @@ export function ProjectOverviewPage() {
           </header>
 
           <section className="mt-10">
-            <h2 className="text-lg font-medium">Catálogo de KPIs</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium">Catálogo de KPIs</h2>
+              <Link href={`/projects/${id}/kpis/import`}>
+                <Button size="sm">
+                  <Sparkles className="h-4 w-4" /> Importar desde Excel
+                </Button>
+              </Link>
+            </div>
+
             {kpisQuery.isLoading && (
               <p className="mt-2 text-sm">Cargando KPIs…</p>
             )}
+
             {kpisQuery.data && kpisQuery.data.length === 0 && (
-              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-                Todavía no hay KPIs. En PR3 podrás importarlos desde un Excel.
-              </p>
+              <div className="mt-4 rounded-md border border-dashed border-[hsl(var(--border))] p-8 text-center">
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Todavía no hay KPIs en este proyecto. Sube un Excel y
+                  Claude Haiku detectará la estructura automáticamente.
+                </p>
+                <Link href={`/projects/${id}/kpis/import`}>
+                  <Button className="mt-4">
+                    <Sparkles className="h-4 w-4" /> Importar primer Excel
+                  </Button>
+                </Link>
+              </div>
             )}
+
             {kpisQuery.data && kpisQuery.data.length > 0 && (
-              <ul className="mt-2 divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+              <ul className="mt-4 divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
                 {kpisQuery.data.map((k) => (
                   <li key={k.id} className="flex justify-between gap-4 p-3">
                     <div>
@@ -62,8 +82,14 @@ export function ProjectOverviewPage() {
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
                         {k.external_code} ·{" "}
                         {k.standard_unit ?? "sin unidad estándar"}
+                        {k.scope && <> · {k.scope}</>}
                       </p>
                     </div>
+                    {k.direction && (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {k.direction}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
