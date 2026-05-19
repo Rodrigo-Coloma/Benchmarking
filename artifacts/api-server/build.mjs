@@ -31,7 +31,7 @@ await Promise.all([
   }),
   build({
     ...common,
-    entryPoints: ["src/migrate.ts"],
+    entryPoints: ["src/cli/migrate.ts"],
     outfile: "dist/migrate.mjs",
   }),
 ]);

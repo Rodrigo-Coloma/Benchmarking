@@ -189,12 +189,6 @@ export async function runMigrations(): Promise<void> {
   logger.info("Migraciones OK");
 }
 
-// CLI mode: `node dist/migrate.mjs`
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runMigrations()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      logger.error({ err }, "Migrations failed");
-      process.exit(1);
-    });
-}
+// El entry CLI (`dist/migrate.mjs`) vive en `src/cli/migrate.ts` — así no se
+// inlina dentro de `dist/index.mjs` y no provoca un `process.exit()` durante
+// el arranque del servidor.
