@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
+// Tailwind 3 + PostCSS — la config vive en tailwind.config.js / postcss.config.js
 
 /**
  * BASE_PATH controla el subpath donde se sirve la app.
@@ -21,7 +21,7 @@ const apiTarget = process.env.VITE_API_PROXY ?? "http://localhost:8080";
 
 export default defineConfig({
   base: basePath,
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
